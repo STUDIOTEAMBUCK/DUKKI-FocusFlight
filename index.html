@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-
-    
-<meta charset="utf-8" />
+    <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>DUKKI FocusFlight</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
 <link rel="stylesheet" href="style.css" />
 
+</head>
 
 <body class="map-style-satellite"> 
+
+<!-- Background audio placed in body; autoplay is attempted programmatically in JS to respect browser policies -->
+<audio id="backgroundMusic" src="soundair.mp3" preload="auto" loop></audio>
 
 <div id="map"></div>
 
@@ -35,6 +37,209 @@
             <span style="font-size: 0.3em; display: block;">✈️</span>
         </span>
     </div>
+</div>
+
+<div id="greetingContainer" style="display: none;">
+</div>
+
+<div class="controls-container">
+  <input type="text" id="departureSearch" placeholder="출발지 검색 (도시, 코드)">
+  <select id="departureSelect">
+    <option value="" disabled selected>출발 도시 선택</option>
+  </select>
+  <div id="selectedFlightInfo" style="display:none;"></div> 
+  <input type="text" id="arrivalSearch" placeholder="도착지 검색 (도시, 코드)" style="display:none;">
+  <div id="arrivalList"></div>
+  <button id="ticketBtn" style="display:none;">좌석 선택</button>
+</div>
+
+<!-- 타이머 메인 컨테이너 -->  
+<div id="timerContainer" >  
+    <!-- 홈화면: DUKKI Focus 텍스트만 -->  
+    <div id="timerDisplayPreFlight">DUKKI Focus</div>  
+      
+    <!-- 비행 중: 각 요소별 컨테이너 -->  
+        <!-- 타이머 컨테이너 -->  
+        <div class="timer-box timer-box-time">  
+            <div class="timer-box-label">남은 시간</div>  
+            <div id="timerDisplay" class="timer-box-value">00H00M00S</div>  
+            <div id="focusStatus"></div>  
+        </div>  
+          
+        <!-- 시간 컨테이너 -->  
+        <div class="timer-box timer-box-clock">  
+            <div class="clock-item">  
+                <div class="timer-box-label">현재시간</div>  
+                <div id="currentTimeDisplay" class="timer-box-value">--:--</div>  
+            </div>  
+            <div class="clock-item">  
+                <div class="timer-box-label">현지시간</div>  
+                <div id="localTimeDisplay" class="timer-box-value">--:--</div>  
+            </div>  
+        </div>  
+          
+        <!-- 거리 컨테이너 -->  
+        <div class="timer-box timer-box-distance">  
+            <div class="timer-box-label">남은 거리</div>  
+            <div id="distanceDisplay" class="timer-box-value">0 KM</div>  
+        </div>  
+      
+</div>  
+  
+
+<button id="moneyButton" class="money-button">
+    💰 <span id="moneyDisplay">1</span>
+</button>
+
+<button id="toggleFollowBtn" class="follow-toggle-btn">
+    <span id="followIcon">📍</span>
+</button>
+
+
+
+
+<div id="recordsContainer">
+  <button class="close-container-btn">×</button> 
+  <h3 style="text-align:center; margin-top:50px;">✈️ 여행 기록</h3>
+  
+  <div id="recordFilterContainer">
+      <button class="record-filter-btn active" data-filter="all">전체</button>
+      <button class="record-filter-btn" data-filter="completed">완료함</button>
+      <button class="record-filter-btn" data-filter="incomplete">미완료</button>
+  </div>
+  
+  <div style="text-align: center; padding: 0 20px;">
+    <button id="clearRecordsBtn">기록 초기화</button>
+  </div>
+  <div id="records"></div>
+</div>
+
+<div id="trendsContainer">
+  <button class="close-container-btn">×</button> 
+  <h3 style="text-align:center; margin-top:50px;">📊 비행 추세 분석</h3>
+  <div class="trends-grid" id="trendsData">
+    </div>
+</div>
+
+<div class="modal" id="ticketModal">
+  <div class="modal-content">
+    <h3>티켓팅</h3>
+    
+    <div style="text-align:center; font-weight:bold; margin-bottom:10px;">
+      선택: <span id="selectedSeatDisplay" style="color:var(--color-primary);">좌석 없음</span> / 
+      <span id="selectedFocusModeDisplay" style="color:var(--color-primary);">모드 없음</span>
+    </div>
+
+    <div id="seatSelectionContainer">
+        <div id="fuselageWrapper">
+            <span class="fuselage-part cockpit"></span>
+            <div id="seatMap"></div>
+            <span class="fuselage-part tail"></span>
+        </div>
+    </div>
+    
+    <div id="focusModeSelector"> 
+        집중 모드 선택:
+        <div id="focusModeButtons"></div> 
+    </div>
+
+    <button id="reselectSeatBtn" class="hidden" style="width:100%; background: var(--color-surface-lighter); color: var(--color-text-light); border: 1px solid var(--color-border-dark); margin-top: 5px;">
+        좌석 다시 선택 🔄
+    </button>
+    
+    <div class="modal-buttons-container" id="selectionButtons">
+        <button id="confirmSelectionBtn" disabled>선택 완료 (티켓 발권)</button>
+        <button id="closeModalBtn">취소</button>
+    </div>
+
+    <div id="boardingPassContainer" style="display:none;">
+        <div class="boarding-pass">
+            <div class="bp-info">
+                <div class="bp-route" id="bpRoute">ICN → JFK</div>
+                <div class="bp-details">
+                    <span id="bpFlightNo">FLT: AA000</span> | 
+                    <span id="bpGate">GATE: A9</span> |
+                    <span id="bpClass">CLASS: F</span>
+                </div>
+            </div>
+            <div class="bp-seat-mode">
+                <div class="bp-seat" id="bpSeat">A-Z</div>
+                <div class="bp-mode" id="bpFocusMode"></div> 
+            </div>
+        </div>
+        <div class="barcode-panel">
+            <div class="barcode"></div>
+            <div class="barcode-text" id="bpBarcodeText">FOCUSFLIGHT-A9-A-Z-STUDY-DUKKI</div>
+            
+            <div id="slideTrack">
+                <div id="slideBackground"></div>
+                <div id="slideHandle">✈️</div>
+                <div id="slideText">밀어서 티켓 스캔 🎫</div> 
+            </div>
+            <div style="font-size:12px; color:#fff; font-weight:bold; margin-top: 5px; display:none;">
+                게이트에 티켓을 스캔하세요
+            </div>
+        </div>
+    </div>
+    
+  </div>
+</div>
+
+<div class="modal" id="nameModal">
+    <div class="modal-content">
+        <h3>환영합니다! 🚀</h3>
+        <p>집중 비행 시뮬레이터에 오신 것을 환영합니다.<br>당신의 이름을 설정해주세요.</p>
+        <input type="text" id="userNameInput" placeholder="이름을 입력하세요">
+        <button id="saveNameBtn" style="margin-top: 20px;">이름 설정 완료</button>
+    </div>
+</div>
+
+<div class="modal" id="settingsModal">
+    <div class="settings-content">
+        <h3>설정 ⚙️</h3>
+        <button id="editNameBtn">이름 수정하기</button>
+        
+        <h4 style="color:var(--color-primary); margin-top: 20px; margin-bottom: 5px;">지도 스타일 설정 🗺️</h4>
+        <div id="mapStyleButtons">
+            <button class="map-style-button" data-style="2d">2D 일반 지도</button>
+            <button class="map-style-button active" data-style="satellite">위성 지도</button> 
+        </div>
+        
+        <h4 style="color:var(--color-primary); margin-top: 20px; margin-bottom: 5px;">데이터 관리 💾</h4>
+        <button onclick="exportData()">데이터 내보내기</button>
+        <button onclick="importData()">데이터 불러오기</button>
+        
+        <div style="font-size: 12px; color: #888; text-align: center; margin-top: 10px;">By TEAMBUCK</div> 
+        <button id="closeSettingsModalBtn">닫기</button>
+    </div>
+</div>
+
+<div class="modal" id="shopContainer">
+    <div class="settings-content"> <button class="close-container-btn" id="closeShopBtn">×</button> 
+        <h3>🛍️ 아이템 상점</h3>
+        <p style="text-align: center; color: var(--color-text-dim); margin-top: 50px; margin-bottom: 50px;">
+            아직 준비 중입니다.<br>
+            곧 다양한 아이템이 추가될 예정입니다! ✈️
+        </p>
+        <div style="font-size: 12px; color: #888; text-align: center; margin-top: 10px;">By TEAMBUCK</div> 
+    </div>
+</div>
+
+<div id="bottomNav">
+  <button id="homeBtn" class="active">홈</button>
+  <button id="recordBtn">여행 기록</button>
+  <button id="trendsBtn">추세</button>
+  <button id="shopBtn">🛍️ 상점</button> 
+  <button id="settingsBtn">⚙️ 설정</button> 
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="main.js">
+
+</script>
+</body>
+</html>    </div>
 </div>
 
 <div id="greetingContainer" style="display: none;">
