@@ -7,9 +7,12 @@
     --color-background-dark: #212529; 
     --color-surface-dark: #343a40; 
     --color-surface-lighter: #495057; 
-    --color-surface-translucent: rgba(52, 58, 64, 0.7); 
-    --color-border-dark: rgba(255, 255, 255, 0.1); 
-    --color-shadow-dark: rgba(0, 0, 0, 0.4); 
+    /* [수정] 투명도 감소 (0.7 -> 0.5) */
+    --color-surface-translucent: rgba(52, 58, 64, 0.5); 
+    /* [수정] 경계선 투명도 증가 (0.1 -> 0.15) */
+    --color-border-dark: rgba(255, 255, 255, 0.15); 
+    /* [수정] 그림자 농도 증가 (0.4 -> 0.6) */
+    --color-shadow-dark: rgba(0, 0, 0, 0.6); 
 }
 
 /* ✈️ 기본 레이아웃 및 다크 모드 배경 */
@@ -22,13 +25,14 @@ body {
 }
 #map { width:100%; height:100%; position:absolute; top:0; left:0; z-index:0; }
 
-/* 💎 글래스모피즘 스타일 */
+/* 💎 글래스모피즘 스타일 (리퀴드 글래스 스타일 적용) */
 .controls-container, #bottomNav, .modal-content, .settings-content, #nameModal .modal-content {
     background: var(--color-surface-translucent); 
-    -webkit-backdrop-filter: blur(20px); 
-    backdrop-filter: blur(20px); 
-    border: 1px solid var(--color-border-dark);
-    box-shadow: 0 8px 32px 0 var(--color-shadow-dark);
+    -webkit-backdrop-filter: blur(35px); /* [수정] 블러 강도 증가 (20px -> 35px) */
+    backdrop-filter: blur(35px); 
+    border: 2px solid var(--color-border-dark); /* [수정] 테두리 두께 증가 (1px -> 2px) */
+    /* [수정] 그림자 강도 증가 및 내부 글로우(Inner Glow) 추가 */
+    box-shadow: 0 12px 40px 0 var(--color-shadow-dark), inset 0 0 15px rgba(255, 255, 255, 0.05);
     color: var(--color-text-light);
 }
 
@@ -68,10 +72,11 @@ body {
     z-index: 9999;
     padding: 15px 25px;
     border-radius: 15px;
+    /* [수정] flight-popup에도 리퀴드 글래스 효과 적용 */
     background: var(--color-surface-translucent);
-    -webkit-backdrop-filter: blur(20px); 
-    backdrop-filter: blur(20px); 
-    border: 1px solid var(--color-border-dark);
+    -webkit-backdrop-filter: blur(35px); 
+    backdrop-filter: blur(35px); 
+    border: 2px solid var(--color-border-dark);
     box-shadow: 0 8px 32px 0 var(--color-shadow-dark);
     color: var(--color-text-light);
     font-size: 18px;
@@ -300,9 +305,9 @@ body {
     font-weight: bold;  
     color: var(--color-text-light);  
     background: var(--color-surface-translucent);  
-    -webkit-backdrop-filter: blur(20px);  
-    backdrop-filter: blur(20px);  
-    border: 1px solid var(--color-border-dark);  
+    -webkit-backdrop-filter: blur(35px); /* [수정] 블러 강도 증가 */
+    backdrop-filter: blur(35px);  
+    border: 2px solid var(--color-border-dark); /* [수정] 테두리 두께 증가 */
     border-radius: 15px;  
     padding: 8px 16px;  
     box-shadow: 0 4px 16px 0 var(--color-shadow-dark);  
@@ -314,9 +319,9 @@ body {
 /* 🆕 각 요소별 박스 스타일 */  
 .timer-box {  
     background: var(--color-surface-translucent);  
-    -webkit-backdrop-filter: blur(20px);  
-    backdrop-filter: blur(20px);  
-    border: 1px solid var(--color-border-dark);  
+    -webkit-backdrop-filter: blur(35px); /* [수정] 블러 강도 증가 */
+    backdrop-filter: blur(35px);  
+    border: 2px solid var(--color-border-dark); /* [수정] 테두리 두께 증가 */
     border-radius: 12px;  
     padding: 8px 12px;  
     box-shadow: 0 4px 16px 0 var(--color-shadow-dark);  
@@ -380,10 +385,11 @@ body {
     width: 45px; 
     height: 45px;
     border-radius: 50%; 
+    /* [수정] follow-toggle-btn에도 리퀴드 글래스 효과 적용 */
     background: var(--color-surface-translucent);
-    -webkit-backdrop-filter: blur(20px); 
-    backdrop-filter: blur(20px); 
-    border: 1px solid var(--color-border-dark);
+    -webkit-backdrop-filter: blur(35px); 
+    backdrop-filter: blur(35px); 
+    border: 2px solid var(--color-border-dark);
     box-shadow: 0 4px 16px 0 var(--color-shadow-dark);
     color: var(--color-text-light);
     font-size: 20px;

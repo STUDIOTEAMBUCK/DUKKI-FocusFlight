@@ -12,7 +12,6 @@
 
 <body class="map-style-satellite"> 
 
-<!-- Background audio placed in body; autoplay is attempted programmatically in JS to respect browser policies -->
 <audio id="backgroundMusic" src="soundair.mp3" preload="auto" loop></audio>
 
 <div id="map"></div>
@@ -53,20 +52,15 @@
   <button id="ticketBtn" style="display:none;">좌석 선택</button>
 </div>
 
-<!-- 타이머 메인 컨테이너 -->  
 <div id="timerContainer" >  
-    <!-- 홈화면: DUKKI Focus 텍스트만 -->  
     <div id="timerDisplayPreFlight">DUKKI Focus</div>  
       
-    <!-- 비행 중: 각 요소별 컨테이너 -->  
-        <!-- 타이머 컨테이너 -->  
-        <div class="timer-box timer-box-time">  
+    <div class="timer-box timer-box-time">  
             <div class="timer-box-label">남은 시간</div>  
             <div id="timerDisplay" class="timer-box-value">00H00M00S</div>  
             <div id="focusStatus"></div>  
         </div>  
           
-        <!-- 시간 컨테이너 -->  
         <div class="timer-box timer-box-clock">  
             <div class="clock-item">  
                 <div class="timer-box-label">현재시간</div>  
@@ -78,7 +72,6 @@
             </div>  
         </div>  
           
-        <!-- 거리 컨테이너 -->  
         <div class="timer-box timer-box-distance">  
             <div class="timer-box-label">남은 거리</div>  
             <div id="distanceDisplay" class="timer-box-value">0 KM</div>  
@@ -201,9 +194,8 @@
         
         <h4 style="color:var(--color-primary); margin-top: 20px; margin-bottom: 5px;">지도 스타일 설정 🗺️</h4>
         <div id="mapStyleButtons">
-            <button class="map-style-button" data-style="2d">2D 일반 지도</button>
-            <button class="map-style-button active" data-style="satellite">위성 지도</button> 
-        </div>
+            <button class="map-style-button" data-style="2d">2D 일반</button>
+            <button class="map-style-button" data-style="2d-dark">2D 다크</button> <button class="map-style-button active" data-style="satellite">위성</button> </div>
         
         <h4 style="color:var(--color-primary); margin-top: 20px; margin-bottom: 5px;">데이터 관리 💾</h4>
         <button onclick="exportData()">데이터 내보내기</button>

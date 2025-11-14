@@ -1,4 +1,4 @@
-// ⭐ DOMContentLoaded 이벤트 리스너 시작
+// ⭐ DOMContentLoaded 이벤트 리S_S너 시작
 document.addEventListener('DOMContentLoaded', function() {
 
     // 🗺️ 공항 데이터 (34개)
@@ -260,12 +260,18 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeMoneyUI(); 
 
     // ----------------------------------------------------
-    // 🛰️ 지도 레이어 정의 및 초기화 함수 (기존 유지)
+    // 🛰️ 지도 레이어 정의 및 초기화 함수 (🌟 2D 다크 포함)
     // ----------------------------------------------------
 
     const baseLayers = {
         "2D 일반 지도": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
             attribution:'© OpenStreetMap'
+        }),
+        // 🌟 "2D 다크 지도" 옵션 추가 (CartoDB 사용)
+        "2D 다크 지도": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
         }),
         "위성 지도": L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{
             maxZoom: 20,
@@ -276,9 +282,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function initializeMapLayers() {
         const savedStyle = localStorage.getItem('focusFlightMapStyle') || 'satellite';
-        currentBaseLayer = baseLayers[savedStyle === '2d' ? "2D 일반 지도" : "위성 지도"];
+        
+        // 🌟 3가지 스타일을 처리하도록 로직 수정
+        if (savedStyle === '2d') {
+            currentBaseLayer = baseLayers["2D 일반 지도"];
+        } else if (savedStyle === '2d-dark') {
+            currentBaseLayer = baseLayers["2D 다크 지도"];
+        } else { // 'satellite' 또는 기본값
+            currentBaseLayer = baseLayers["위성 지도"];
+        }
+        
         currentBaseLayer.addTo(map);
-        document.body.classList.remove('map-style-satellite', 'map-style-2d'); 
+        
+        // 🌟 3가지 클래스를 관리하도록 수정
+        document.body.classList.remove('map-style-satellite', 'map-style-2d', 'map-style-2d-dark'); 
         document.body.classList.add(`map-style-${savedStyle}`); 
         map.setZoom(2); 
 
@@ -296,19 +313,23 @@ document.addEventListener('DOMContentLoaded', function() {
             map.removeLayer(currentBaseLayer);
         }
         
+        // 🌟 3가지 클래스를 관리하도록 수정
+        document.body.classList.remove('map-style-satellite', 'map-style-2d', 'map-style-2d-dark'); 
+        
+        // 🌟 3가지 스타일을 처리하도록 로직 수정
         if (style === '2d') {
             currentBaseLayer = baseLayers["2D 일반 지도"];
-            currentBaseLayer.addTo(map);
-            document.body.classList.remove('map-style-satellite'); 
             document.body.classList.add('map-style-2d'); 
-            map.setView([20, 0], 2); 
+        } else if (style === '2d-dark') {
+            currentBaseLayer = baseLayers["2D 다크 지도"];
+            document.body.classList.add('map-style-2d-dark'); 
         } else if (style === 'satellite') {
             currentBaseLayer = baseLayers["위성 지도"];
-            currentBaseLayer.addTo(map);
-            document.body.classList.remove('map-style-2d'); 
             document.body.classList.add('map-style-satellite'); 
-            map.setView([20, 0], 2); 
         }
+        
+        currentBaseLayer.addTo(map);
+        map.setView([20, 0], 2); 
         
         localStorage.setItem('focusFlightMapStyle', style); // 설정 저장
 
@@ -1734,7 +1755,7 @@ document.querySelector('.timer-box-distance').style.display = 'block';
 
     
     // ----------------------------------------------------
-    // 🧭 하단 네비게이션 및 설정 이벤트 (기존 유지)
+    // 🧭 하단 네비게이션 및 설정 이벤트 (🌟 수정됨)
     // ----------------------------------------------------
     
     function hideAllContainers() {
@@ -1790,12 +1811,32 @@ document.querySelector('.timer-box-distance').style.display = 'block';
         bottomNavUpdateActive('shopBtn');
     };
 
+    // 🌟 [수정] settingsBtn.onclick 핸들러 (비행 중/아닐 때 분리)
     document.getElementById('settingsBtn').onclick = () => { 
-        if (pendingFlight) return;
-        hideAllContainers();
-        document.getElementById('map').style.display='block';
-        settingsModal.style.display = 'flex';
-        bottomNavUpdateActive('settingsBtn');
+        if (pendingFlight) {
+            // ✈️ 비행 중일 때:
+            settingsModal.style.display = 'flex';
+            
+            // 맵 스타일 변경 외 다른 버튼들은 비활성화
+            editNameBtn.disabled = true;
+            document.querySelector('.settings-content button[onclick="exportData()"]').disabled = true;
+            document.querySelector('.settings-content button[onclick="importData()"]').disabled = true;
+            
+            // 하단 네비게이션 활성 표시는 변경하지 않음
+            
+        } else {
+            // 🏠 비행 중이 아닐 때 (기존 동작):
+            hideAllContainers();
+            document.getElementById('map').style.display='block';
+            settingsModal.style.display = 'flex';
+            
+            // 모든 버튼 활성화
+            editNameBtn.disabled = false;
+            document.querySelector('.settings-content button[onclick="exportData()"]').disabled = false;
+            document.querySelector('.settings-content button[onclick="importData()"]').disabled = false;
+            
+            bottomNavUpdateActive('settingsBtn');
+        }
     };
     
     document.querySelectorAll('.close-container-btn').forEach(btn => {
@@ -1832,9 +1873,15 @@ document.querySelector('.timer-box-distance').style.display = 'block';
         }
     };
 
+    // 🌟 [수정] closeSettingsModalBtn.onclick 핸들러 (비행 중/아닐 때 분리)
     closeSettingsModalBtn.onclick = () => {
         settingsModal.style.display = 'none';
-        bottomNavUpdateActive('homeBtn');
+        
+        if (!pendingFlight) {
+            // 비행 중이 아닐 때만 'homeBtn'을 활성화합니다.
+            bottomNavUpdateActive('homeBtn');
+        }
+        // 비행 중일 때는 모달만 닫고 아무것도 하지 않습니다.
     };
 
     document.querySelectorAll('.map-style-button').forEach(button => {
@@ -1921,4 +1968,4 @@ document.querySelector('.timer-box-distance').style.display = 'block';
     updateClocks(); 
     initializeMoneyUI(); 
     
-}); 
+});
