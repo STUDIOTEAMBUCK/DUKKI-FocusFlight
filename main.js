@@ -1,4 +1,4 @@
-// ⭐ DOMContentLoaded 이벤트 리S_S너 시작
+// ⭐ DOMContentLoaded 이벤트 리스너 시작
 document.addEventListener('DOMContentLoaded', function() {
 
     // 🗺️ 공항 데이터 (34개)
@@ -39,11 +39,11 @@ document.addEventListener('DOMContentLoaded', function() {
       'Boston':{code:'BOS',name:'Logan International Airport',lat:42.3656,lon:-71.0096, tzOffset: -5}
     };
 
-    // ✈️ 비행 시간 (기존 유지)
+    // ✈️ 비행 시간
     const flightTimes = {};
     const cities = Object.keys(airportData);
     
-    // 헬퍼 함수 (기존 유지)
+    // 헬퍼 함수
     const R = 6371; 
     function calculateDistance(lat1, lon1, lat2, lon2) {
         const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const reselectSeatBtn = document.getElementById('reselectSeatBtn'); 
     const selectionButtons = document.getElementById('selectionButtons'); 
 
-    // 🆕 [수정] 상점 관련 DOM 요소
+    // 🆕 상점 관련 DOM 요소
     const shopBtn = document.getElementById('shopBtn');
     const shopContainer = document.getElementById('shopContainer');
     const closeShopBtn = document.getElementById('closeShopBtn');
@@ -179,10 +179,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const backgroundMusic = document.getElementById('backgroundMusic'); 
 
-    // Try to autoplay background music; browsers often block autoplay with sound.
-    // We set preload and volume, attempt to play programmatically, and if the
-    // play() promise is rejected we show a small user-visible play button so
-    // the user can start audio with a gesture (required by many browsers).
     try {
         backgroundMusic.preload = 'auto';
         backgroundMusic.volume = 0.6;
@@ -190,10 +186,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // ignore if element not present
     }
 
-    // Note: do NOT attempt to autoplay on load. Background music will be
-    // started explicitly when a flight begins (startFlight) and paused in
-    // stopFlight. This avoids autoplay UI and respects user's choice.
-    
     // 🆕 클락 관련 DOM 요소
     const clockContainer = document.getElementById('clockContainer');
     const currentTimeDisplay = document.getElementById('currentTimeDisplay');
@@ -205,16 +197,20 @@ document.addEventListener('DOMContentLoaded', function() {
     
     let currentBaseLayer = null;
     
+    // ⭐ [수정됨] 비행기 아이콘: L.divIcon 사용
+    // L.icon 대신 L.divIcon을 사용해 이미지 태그를 직접 넣습니다.
+    // 이렇게 해야 Leaflet이 위치(translate)를 잡고, 우리가 이미지(img)만 회전(rotate)시킬 수 있어 간섭이 없습니다.
     const airplaneIcon = L.divIcon({
-        html: '✈️',
-        className: 'emoji-marker-icon', 
-        iconSize: [32, 32], 
-        iconAnchor: [16, 16], 
-        popupAnchor: [0, -16]
+        className: 'airplane-div-icon', // CSS 클래스는 없어도 되지만 명시
+        // 📂 flight.png 이미지를 내부에 포함
+        html: `<img src="flight.png" class="plane-img" style="width:40px; height:40px; display:block;">`,
+        iconSize: [40, 40],          
+        iconAnchor: [20, 20],        // 📍 중심점
+        popupAnchor: [0, -20]        
     });
     
     /**
-     * 🌟 공항 마커 아이콘 정의 헬퍼 (기존 유지)
+     * 🌟 공항 마커 아이콘 정의 헬퍼
      */
     function createAirportIcon(code, isDeparture = true) {
         return L.divIcon({
@@ -225,30 +221,29 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ⭐ Leaflet 지도 객체 초기화 (기존 유지)
+    // ⭐ Leaflet 지도 객체 초기화
     const map=L.map('map',{zoomControl:true}).setView([20,0],2);
     
     // ----------------------------------------------------
     // 🔄 UI 상태 초기화 함수 (타이머)
     // ----------------------------------------------------
     function initializeTimerUI() {  
-    timerContainer.classList.remove('is-flight-active');  
-    document.querySelector('.timer-box-time').style.display = 'none';  
-    document.querySelector('.timer-box-clock').style.display = 'none';  
-    document.querySelector('.timer-box-distance').style.display = 'none';  
-    focusStatus.style.display = 'none';  
-      
-    timerDisplayPreFlight.style.display = 'block';   
-    timerDisplayPreFlight.textContent = 'DUKKI Focus';  
-      
-    timerDisplay.textContent = '00H00M00S';  
-    currentTimeDisplay.textContent = '--:--';  
-    localTimeDisplay.textContent = '--:--';  
-    distanceDisplay.textContent = '0 KM';  
-    focusStatus.textContent = '';   
-}  
+        timerContainer.classList.remove('is-flight-active');  
+        document.querySelector('.timer-box-time').style.display = 'none';  
+        document.querySelector('.timer-box-clock').style.display = 'none';  
+        document.querySelector('.timer-box-distance').style.display = 'none';  
+        focusStatus.style.display = 'none';  
+          
+        timerDisplayPreFlight.style.display = 'block';   
+        timerDisplayPreFlight.textContent = 'DUKKI Focus';  
+          
+        timerDisplay.textContent = '00H00M00S';  
+        currentTimeDisplay.textContent = '--:--';  
+        localTimeDisplay.textContent = '--:--';  
+        distanceDisplay.textContent = '0 KM';  
+        focusStatus.textContent = '';   
+    }  
 
-    
     // 💵 돈 UI 초기화
     function initializeMoneyUI() {
         currentMoney = parseInt(localStorage.getItem('focusFlightMoney')) || 1; // 로컬 스토리지에서 다시 로드
@@ -260,18 +255,12 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeMoneyUI(); 
 
     // ----------------------------------------------------
-    // 🛰️ 지도 레이어 정의 및 초기화 함수 (🌟 2D 다크 포함)
+    // 🛰️ 지도 레이어 정의 및 초기화 함수
     // ----------------------------------------------------
 
     const baseLayers = {
         "2D 일반 지도": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
             attribution:'© OpenStreetMap'
-        }),
-        // 🌟 "2D 다크 지도" 옵션 추가 (CartoDB 사용)
-        "2D 다크 지도": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            subdomains: 'abcd',
-            maxZoom: 20
         }),
         "위성 지도": L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{
             maxZoom: 20,
@@ -282,20 +271,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function initializeMapLayers() {
         const savedStyle = localStorage.getItem('focusFlightMapStyle') || 'satellite';
-        
-        // 🌟 3가지 스타일을 처리하도록 로직 수정
-        if (savedStyle === '2d') {
-            currentBaseLayer = baseLayers["2D 일반 지도"];
-        } else if (savedStyle === '2d-dark') {
-            currentBaseLayer = baseLayers["2D 다크 지도"];
-        } else { // 'satellite' 또는 기본값
-            currentBaseLayer = baseLayers["위성 지도"];
-        }
-        
+        currentBaseLayer = baseLayers[savedStyle === '2d' ? "2D 일반 지도" : "위성 지도"];
         currentBaseLayer.addTo(map);
-        
-        // 🌟 3가지 클래스를 관리하도록 수정
-        document.body.classList.remove('map-style-satellite', 'map-style-2d', 'map-style-2d-dark'); 
+        document.body.classList.remove('map-style-satellite', 'map-style-2d'); 
         document.body.classList.add(`map-style-${savedStyle}`); 
         map.setZoom(2); 
 
@@ -313,23 +291,19 @@ document.addEventListener('DOMContentLoaded', function() {
             map.removeLayer(currentBaseLayer);
         }
         
-        // 🌟 3가지 클래스를 관리하도록 수정
-        document.body.classList.remove('map-style-satellite', 'map-style-2d', 'map-style-2d-dark'); 
-        
-        // 🌟 3가지 스타일을 처리하도록 로직 수정
         if (style === '2d') {
             currentBaseLayer = baseLayers["2D 일반 지도"];
+            currentBaseLayer.addTo(map);
+            document.body.classList.remove('map-style-satellite'); 
             document.body.classList.add('map-style-2d'); 
-        } else if (style === '2d-dark') {
-            currentBaseLayer = baseLayers["2D 다크 지도"];
-            document.body.classList.add('map-style-2d-dark'); 
+            map.setView([20, 0], 2); 
         } else if (style === 'satellite') {
             currentBaseLayer = baseLayers["위성 지도"];
+            currentBaseLayer.addTo(map);
+            document.body.classList.remove('map-style-2d'); 
             document.body.classList.add('map-style-satellite'); 
+            map.setView([20, 0], 2); 
         }
-        
-        currentBaseLayer.addTo(map);
-        map.setView([20, 0], 2); 
         
         localStorage.setItem('focusFlightMapStyle', style); // 설정 저장
 
@@ -349,7 +323,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 초기화 호출
     initializeMapLayers();
-    // ----------------------------------------------------
     
     // 🗺️ 지도 따라가기/자유 이동 토글 기능
     function toggleFollow() {
@@ -374,7 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleFollowBtn.onclick = toggleFollow;
     
     // ----------------------------------------------------
-    // 🌟 이름 관련 함수 (기존 유지)
+    // 🌟 이름 관련 함수
     
     function loadUserName() {
         userName = localStorage.getItem('focusFlightUserName');
@@ -432,7 +405,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // ----------------------------------------------------
-    // 🌐 시간 및 위치 관련 헬퍼 함수 추가 (업데이트)
+    // 🌐 시간 및 위치 관련 헬퍼 함수
     // ----------------------------------------------------
 
     let clockInterval = null;
@@ -440,30 +413,29 @@ document.addEventListener('DOMContentLoaded', function() {
     /**
      * ⏰ 현재 시간 및 현지 시간 표시 업데이트
      */
-function updateClocks() {  
-    const now = new Date();  
-    const currentHours = now.getHours();  
-    const currentMinutes = String(now.getMinutes()).padStart(2, '0');  
+    function updateClocks() {  
+        const now = new Date();  
+        const currentHours = now.getHours();  
+        const currentMinutes = String(now.getMinutes()).padStart(2, '0');  
+          
+        currentTimeDisplay.innerHTML = `<strong>${String(currentHours).padStart(2, '0')}:${currentMinutes}</strong>`;  
       
-    currentTimeDisplay.innerHTML = `<strong>${String(currentHours).padStart(2, '0')}:${currentMinutes}</strong>`;  
-  
-    if (selectedArrival && airportData[selectedArrival]) {  
-        const arrOffset = airportData[selectedArrival].tzOffset;  
-        const kstOffset = 9;  
-        const diff = arrOffset - kstOffset;  
-        let localOffsetHours = currentHours + diff;  
-          
-        if (localOffsetHours >= 24) localOffsetHours -= 24;  
-        else if (localOffsetHours < 0) localOffsetHours += 24;  
-          
-        const localHours = String(localOffsetHours).padStart(2, '0');  
-        localTimeDisplay.innerHTML = `<strong>${localHours}:${currentMinutes}</strong>`;  
-    } else {  
-        localTimeDisplay.innerHTML = '<strong>--:--</strong>';  
+        if (selectedArrival && airportData[selectedArrival]) {  
+            const arrOffset = airportData[selectedArrival].tzOffset;  
+            const kstOffset = 9;  
+            const diff = arrOffset - kstOffset;  
+            let localOffsetHours = currentHours + diff;  
+              
+            if (localOffsetHours >= 24) localOffsetHours -= 24;  
+            else if (localOffsetHours < 0) localOffsetHours += 24;  
+              
+            const localHours = String(localOffsetHours).padStart(2, '0');  
+            localTimeDisplay.innerHTML = `<strong>${localHours}:${currentMinutes}</strong>`;  
+        } else {  
+            localTimeDisplay.innerHTML = '<strong>--:--</strong>';  
+        }  
     }  
-}  
 
-    
     // 1분마다 시계 업데이트
     clockInterval = setInterval(updateClocks, 60000); 
     
@@ -476,7 +448,7 @@ function updateClocks() {
     }
 
     // ----------------------------------------------------
-    // 🛠️ 헬퍼 함수 (타이머, 팝업, 경로 계산 등) (업데이트)
+    // 🛠️ 헬퍼 함수 (타이머, 팝업, 경로 계산 등)
     // ----------------------------------------------------
     
     function formatTime(sec){
@@ -500,7 +472,7 @@ function updateClocks() {
         }, duration);
     }
 
-    // 🌟 비행 완료 스탬프 애니메이션 함수 추가 (기존 유지)
+    // 🌟 비행 완료 스탬프 애니메이션 함수
     function showStampAnimation() {
         stampAnimation.classList.add('stamp-animate');
         // 4초 후 애니메이션 클래스 제거 및 숨김
@@ -545,86 +517,104 @@ function updateClocks() {
         return path;
     }
     
+    /**
+     * 🌟 [최종 수정] 비행기 이동 및 회전 로직 함수
+     * - L.divIcon 내부의 img 태그를 직접 선택하여 회전시킵니다.
+     * - 이렇게 하면 Leaflet의 위치 이동과 우리의 회전이 충돌하지 않습니다.
+     */
     function moveMarkerWithTimer(from,to,durationSec,callback){ 
+        // 기존 라인/마커 제거
         if(flightLine) map.removeLayer(flightLine);
         if(flightMarker) map.removeLayer(flightMarker);
         
         if (departureAirportMarker) { departureAirportMarker.addTo(map); }
         if (arrivalAirportMarker) { arrivalAirportMarker.addTo(map); }
         
-        map.setView(from,13); 
+        map.setView(from, 13); 
         
         const destLat = to[0];
         const destLon = to[1];
 
-        const fps=30;
-        const steps=durationSec*fps;
-        const path=greatCircle(from,to,steps);
-        flightLine=L.polyline(path,{color:'#0077ff'}).addTo(map);
-        flightMarker=L.marker(from, {icon: airplaneIcon}).addTo(map); 
-        let step=0;
+        const fps = 30; // 프레임 속도
+        const steps = durationSec * fps;
         
-        // 🆕 거리-돈 획득 로직 관련 변수
+        // 경로 계산
+        const path = greatCircle(from, to, steps);
+        
+        flightLine = L.polyline(path, {color: '#0077ff', weight: 2}).addTo(map);
+        flightMarker = L.marker(from, {
+            icon: airplaneIcon, 
+            zIndexOffset: 1000 
+        }).addTo(map); 
+        
+        let step = 0;
         let lastCalculatedDistance = initialFlightDistance; 
-        lastMoneyGainDistance = 0; // 이륙 시점에서는 0km로 초기화
+        lastMoneyGainDistance = 0; 
+
+        // 🌟 정확한 방위각 계산 함수 (북쪽 = 0도)
+        function calcBearing(lat1, lon1, lat2, lon2) {
+            const toRad = Math.PI / 180;
+            const toDeg = 180 / Math.PI;
+            
+            const dLon = (lon2 - lon1) * toRad;
+            const y = Math.sin(dLon) * Math.cos(lat2 * toRad);
+            const x = Math.cos(lat1 * toRad) * Math.sin(lat2 * toRad) -
+                      Math.sin(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.cos(dLon);
+            
+            let brng = Math.atan2(y, x) * toDeg;
+            return (brng + 360) % 360; // 0~360도 정규화
+        }
 
         function animate(){
-            if(step>=path.length){ 
+            if(step >= path.length){ 
                 distanceDisplay.textContent = '0 km'; 
                 showPopup("비행을 완료했습니다 좋은 여행 되세요🛬", 3000);
                 if(callback) callback(); 
                 return; 
             }
             
-            const currentLat = path[step][0];
-            const currentLon = path[step][1];
+            const currentPos = path[step];
             
-            flightMarker.setLatLng(path[step]);
-            const markerEl = flightMarker.getElement();
-
-
-        function calcBearing(latA, lonA, latB, lonB) {
-    const rad = Math.PI / 180;
-    const φ1 = latA * rad;
-    const φ2 = latB * rad;
-    const dLon = (lonB - lonA) * rad;
-
-    const y = Math.sin(dLon) * Math.cos(φ2);
-    const x = Math.cos(φ1) * Math.sin(φ2) -
-              Math.sin(φ1) * Math.cos(φ2) * Math.cos(dLon);
-
-    let angle = Math.atan2(y, x) * 180 / Math.PI;
-    if (angle < 0) angle += 360;
-    return angle;
-}
-
-const nextPos = path[Math.min(step + 1, path.length - 1)];
-const [nLat, nLon] = nextPos;
-
-// 방향(방위각) 계산
-const dir = calcBearing(currentLat, currentLon, nLat, nLon);
-
-if (markerEl) {
-    // 기존 transform에서 translate3d 부분만 추출
-    const translate = markerEl.style.transform.match(/translate3d\([^)]*\)/)?.[0] || '';
-    // 비행기 기본 방향 보정 (✈️ 대부분 오른쪽 또는 위쪽 기준)
-    const rotation = dir - 45; // 45도 보정은 필요에 따라 조정
-    markerEl.style.transform += `rotate(${rotation.toFixed(1)}deg)`;
-}
-
-            // 🗺️ autoFollow 상태에 따라 맵 이동 결정
-            if(autoFollow) {
-                map.panTo(path[step],{animate:false});
-                //map.setZoom(13); 
+            // 1. Leaflet을 통해 마커 '위치' 이동
+            flightMarker.setLatLng(currentPos);
+            
+            // 2. 다음 이동할 지점을 미리 봐서 각도 계산 (미래 예측)
+            let nextIndex = Math.min(step + 5, path.length - 1); 
+            let nextPos = path[nextIndex];
+            
+            // 도착 직전에는 마지막 지점을 바라봄
+            if (step >= path.length - 5) {
+                 nextPos = path[path.length - 1];
             }
 
+            // 3. '내부 이미지'만 찾아 회전 적용 (핵심)
+            const markerEl = flightMarker.getElement();
+            if (markerEl) {
+                // divIcon 내부에 넣어둔 img 태그 찾기
+                const imgEl = markerEl.querySelector('.plane-img');
+                if (imgEl) {
+                    const angle = calcBearing(currentPos[0], currentPos[1], nextPos[0], nextPos[1]);
+                    
+                    // 회전 중심을 이미지의 정중앙으로 고정
+                    imgEl.style.transformOrigin = "center center";
+                    // 위치(translate)는 건드리지 않고 회전만 적용
+                    imgEl.style.transform = `rotate(${angle}deg)`;
+                }
+            }
+
+            // 🗺️ 지도 따라가기
+            if(autoFollow) {
+                map.panTo(currentPos, {animate: false});
+            }
+
+            // 거리 및 돈 계산
+            const currentLat = currentPos[0];
+            const currentLon = currentPos[1];
             const remainingDistance = calculateDistance(currentLat, currentLon, destLat, destLon);
             distanceDisplay.textContent = `${remainingDistance.toFixed(0)} km`; 
             
-            // 💰 돈 획득 로직
             const distanceTraveledSinceStart = lastCalculatedDistance - remainingDistance;
             const newTotalTraveled = Math.max(0, distanceTraveledSinceStart);
-            
             const gainableDistance = newTotalTraveled - lastMoneyGainDistance;
             
             if (gainableDistance >= 20) {
@@ -634,7 +624,7 @@ if (markerEl) {
             }
 
             step++; 
-            setTimeout(animate,1000/fps);
+            setTimeout(animate, 1000/fps);
         }
         animate();
     }
@@ -657,7 +647,6 @@ if (markerEl) {
         return rand < 0.89; // 89% 예약 가능 (나머지 1%는 에러/미확인 좌석으로 가정)
     }
 
-    
     // ----------------------------------------------------
     // 🌐 UI 및 이벤트 핸들러 (선택, 모달, 렌더링)
     // ----------------------------------------------------
@@ -710,7 +699,7 @@ if (markerEl) {
     };
 
     /**
-     * 🌟 티켓팅 모달 열기 및 상태 초기화 (기존 유지 + 금액 확인 로직 분리)
+     * 🌟 티켓팅 모달 열기 및 상태 초기화
      */
     function showTicketModal() {
         if (!currentDeparture || !selectedArrival) return; 
@@ -744,7 +733,7 @@ if (markerEl) {
     }
     
     /**
-     * 🌟 선택 표시 업데이트 및 버튼 활성화 체크 (기존 유지)
+     * 🌟 선택 표시 업데이트 및 버튼 활성화 체크
      */
     function updateSelectionDisplay() {
         selectedSeatDisplay.textContent = selectedSeat || '좌석 없음';
@@ -759,7 +748,7 @@ if (markerEl) {
     }
 
     /**
-     * 🌟 좌석 선택 시 좌석 지도만 접기 (기존 유지)
+     * 🌟 좌석 선택 시 좌석 지도만 접기
      */
     function autoCollapseSeatSelection() {
         if (selectedSeat) {
@@ -769,7 +758,7 @@ if (markerEl) {
     }
 
     /**
-     * 🌟 좌석 다시 선택 버튼 클릭 시 확장 처리 (기존 유지)
+     * 🌟 좌석 다시 선택 버튼 클릭 시 확장 처리
      */
     reselectSeatBtn.onclick = () => {
         seatSelectionContainer.classList.remove('collapsed');
@@ -777,7 +766,7 @@ if (markerEl) {
     };
 
     /**
-     * 🌟 보딩 패스 렌더링 및 애니메이션 적용 (기존 유지)
+     * 🌟 보딩 패스 렌더링 및 애니메이션 적용
      */
     function renderBoardingPass() {
         const depAirport = airportData[currentDeparture];
@@ -843,7 +832,7 @@ if (markerEl) {
     }
     
     /**
-     * 🚨 금액 확인 후 티켓 발권 (로직 업데이트)
+     * 🚨 금액 확인 후 티켓 발권
      */
     confirmSelectionBtn.onclick = () => {
         if (!selectedSeat) { alert('좌석 선택이 필요합니다.'); return; }
@@ -874,7 +863,7 @@ if (markerEl) {
     };
     
     /**
-     * 🌟 도착지 목록 렌더링 (기존 유지)
+     * 🌟 도착지 목록 렌더링
      */
     function renderArrivalList(filter = ''){
         arrivalList.innerHTML=''; 
@@ -955,7 +944,7 @@ if (markerEl) {
     };
 
     /**
-     * 🌟 좌석 렌더링 (🚨 [수정] EXIT, 구분선 수정됨)
+     * 🌟 좌석 렌더링
      */
     function renderSeats(){ 
         const seatMapContainer = document.getElementById('seatMap');
@@ -991,7 +980,7 @@ if (markerEl) {
             
             rowDiv.dataset.class = rowClass;
 
-            // 🚨 화장실 및 통로 표시 (수정됨)
+            // 🚨 화장실 및 통로 표시
             if (r === 1) {
                 const facilityDiv = document.createElement('div');
                 facilityDiv.className = 'section-facility';
@@ -1009,7 +998,6 @@ if (markerEl) {
             if (r === 5) {
                 const facilityDiv = document.createElement('div');
                 facilityDiv.className = 'section-facility';
-                // 🚨 'exit-center'를 'exit-left'와 'exit-right'로 변경
                 facilityDiv.innerHTML = `<span class="facility-item exit-left">🚪 EXIT</span> <span class="facility-item exit-right">🚪 EXIT</span>`;
                 seatMapContainer.appendChild(facilityDiv);
                 
@@ -1022,7 +1010,6 @@ if (markerEl) {
             if (r === 20 || r === 35) {
                 const facilityDiv = document.createElement('div');
                 facilityDiv.className = 'section-facility';
-                // 🚨 'exit-center'를 'exit-left'와 'exit-right'로 변경 (화장실 제거)
                 facilityDiv.innerHTML = `<span class="facility-item exit-left">🚪 EXIT</span> <span class="facility-item exit-right">🚪 EXIT</span>`;
                 seatMapContainer.appendChild(facilityDiv);
                 
@@ -1101,12 +1088,11 @@ if (markerEl) {
             });
             seatMapContainer.appendChild(rowDiv);
             
-            // 🚨 40열 다음에 화장실/EXIT 표시 (수정됨)
+            // 🚨 40열 다음에 화장실/EXIT 표시
             if (r === 40) {
                  const facilityDiv = document.createElement('div');
                 facilityDiv.className = 'section-facility';
                 
-                // 🚨 [수정] 후방 EXIT를 가장 양옆으로 배치 (auto-margin 클래스 제거, flex space-between 활용)
                 facilityDiv.innerHTML = `
                     <span class="facility-item" style="color: var(--color-accent-red); font-weight: bold;">🚪 EXIT</span>
                     <span class="facility-item">🚽</span>
@@ -1119,7 +1105,7 @@ if (markerEl) {
     }
 
     /**
-     * 🌟 집중 모드 렌더링 (기존 유지)
+     * 🌟 집중 모드 렌더링
      */
     function renderFocusModeButtons(){ 
         focusModeButtonsContainer.innerHTML = '';
@@ -1154,7 +1140,7 @@ if (markerEl) {
         });
     }
 
-    // 5초 꾹 누름 로직 (기존 유지)
+    // 5초 꾹 누름 로직
     function handleStopFlightStart(event) {
         event.preventDefault(); 
         if (pressTimer) return;
@@ -1193,10 +1179,10 @@ if (markerEl) {
     function realStopFlight() { 
         alert("비행이 강제 중지되었습니다. 집중 모드를 이탈했습니다. 🛑");
         timerDisplayPreFlight.style.display = 'block';  
-document.querySelector('.timer-box-time').style.display = 'none';  
-focusStatus.style.display = 'none';  
-document.querySelector('.timer-box-clock').style.display = 'none';  
-document.querySelector('.timer-box-distance').style.display = 'none';  
+        document.querySelector('.timer-box-time').style.display = 'none';  
+        focusStatus.style.display = 'none';  
+        document.querySelector('.timer-box-clock').style.display = 'none';  
+        document.querySelector('.timer-box-distance').style.display = 'none';  
         saveFlightRecord(); 
         stopFlight(false); 
     }
@@ -1211,7 +1197,7 @@ document.querySelector('.timer-box-distance').style.display = 'none';
     
     
     // ----------------------------------------------------
-    // 🚀 슬라이더 드래그 로직 (기존 유지)
+    // 🚀 슬라이더 드래그 로직
     // ----------------------------------------------------
     let isDragging = false;
     let startOffset = 0; 
@@ -1316,10 +1302,9 @@ document.querySelector('.timer-box-distance').style.display = 'none';
             }, 300); 
         }
     }
-    // ------------------------------------
     
     // ----------------------------------------------------
-    // ✈️ 비행 시작/중지/저장 핵심 로직 (업데이트)
+    // ✈️ 비행 시작/중지/저장 핵심 로직
     // ----------------------------------------------------
     
     /**
@@ -1335,15 +1320,13 @@ document.querySelector('.timer-box-distance').style.display = 'none';
 
         showPopup("티켓이 스캔되었습니다. 비행을 시작합니다! 🛫", 3000);
 
-        // 자동 재생 시도: 비행 시작은 사용자의 제스처(슬라이드)로 유발되므로
-        // 대부분의 브라우저에서 play()가 허용됩니다. 실패하면 안내 팝업을 띄웁니다.
+        // 자동 재생 시도
         if (backgroundMusic) {
             try {
                 backgroundMusic.currentTime = 0;
                 const playPromise = backgroundMusic.play();
                 if (playPromise !== undefined) {
                     playPromise.catch(() => {
-                        // 자동 재생이 차단된 경우 사용자에게 간단 안내
                         showPopup('브라우저 자동 재생 정책으로 음악이 차단되었습니다. 화면을 한 번 터치하면 음악이 재생됩니다.', 4000);
                     });
                 }
@@ -1364,12 +1347,12 @@ document.querySelector('.timer-box-distance').style.display = 'none';
         modal.style.display='none';
         
         // 🔄 타이머 UI를 비행 중 모드로 전환  
-timerContainer.classList.add('is-flight-active');  
-timerDisplayPreFlight.style.display = 'none';  
-document.querySelector('.timer-box-time').style.display = 'block';  
-focusStatus.style.display = 'block';  
-document.querySelector('.timer-box-clock').style.display = 'block';  
-document.querySelector('.timer-box-distance').style.display = 'block';  
+        timerContainer.classList.add('is-flight-active');  
+        timerDisplayPreFlight.style.display = 'none';  
+        document.querySelector('.timer-box-time').style.display = 'block';  
+        focusStatus.style.display = 'block';  
+        document.querySelector('.timer-box-clock').style.display = 'block';  
+        document.querySelector('.timer-box-distance').style.display = 'block';  
 
         // 🆕 📍/☝️ 버튼 표시
         toggleFollowBtn.style.display = 'flex'; 
@@ -1396,10 +1379,6 @@ document.querySelector('.timer-box-distance').style.display = 'block';
         autoFollow = true;
         followIcon.textContent = '📍';
         //map.setZoom(13);
-
-
-
-
 
         // 비행 중 UI 설정
         ticketBtn.textContent='비행 중지 (5초 꾹)'; 
@@ -1481,9 +1460,6 @@ document.querySelector('.timer-box-distance').style.display = 'block';
             }
         }
         
-        // 🔄 타이머 UI를 비행 전 모드로 전환.               initializeTimerUI();  
-
-        
         // 🆕 📍/☝️ 버튼 숨김
         toggleFollowBtn.style.display = 'none'; 
         
@@ -1549,10 +1525,13 @@ document.querySelector('.timer-box-distance').style.display = 'block';
         hideAllContainers();
         document.getElementById('map').style.display='block';
         bottomNavUpdateActive('homeBtn');
+        
+        // 타이머 UI 초기화
+        initializeTimerUI();
     }
 
     /**
-     * 💾 비행 기록 저장 (기존 유지)
+     * 💾 비행 기록 저장
      */
     function saveFlightRecord(){ 
         if(!pendingFlight) return;
@@ -1574,7 +1553,7 @@ document.querySelector('.timer-box-distance').style.display = 'block';
     }
     
     // ----------------------------------------------------
-    // 📜 기록 및 추세 렌더링 (기존 유지)
+    // 📜 기록 및 추세 렌더링
     // ----------------------------------------------------
 
     function renderRecords(filter = 'all'){ 
@@ -1755,7 +1734,7 @@ document.querySelector('.timer-box-distance').style.display = 'block';
 
     
     // ----------------------------------------------------
-    // 🧭 하단 네비게이션 및 설정 이벤트 (🌟 수정됨)
+    // 🧭 하단 네비게이션 및 설정 이벤트
     // ----------------------------------------------------
     
     function hideAllContainers() {
@@ -1763,7 +1742,7 @@ document.querySelector('.timer-box-distance').style.display = 'block';
         recordsContainer.style.display='none';
         trendsContainer.style.display='none';
         settingsModal.style.display='none'; 
-        shopContainer.style.display='none'; // ⬅️ [수정] 상점 컨테이너 숨기기 추가
+        shopContainer.style.display='none'; 
         if (!pendingFlight && userName) {
             updateGreeting(userName);
         } else {
@@ -1803,40 +1782,20 @@ document.querySelector('.timer-box-distance').style.display = 'block';
         bottomNavUpdateActive('trendsBtn');
     };
 
-    document.getElementById('shopBtn').onclick = () => { // ⬅️ [신규] 상점 버튼 핸들러
+    document.getElementById('shopBtn').onclick = () => { 
         if (pendingFlight) return;
         hideAllContainers();
         greetingContainer.style.display = 'none';
-        shopContainer.style.display = 'flex'; // 'flex'로 설정
+        shopContainer.style.display = 'flex'; 
         bottomNavUpdateActive('shopBtn');
     };
 
-    // 🌟 [수정] settingsBtn.onclick 핸들러 (비행 중/아닐 때 분리)
     document.getElementById('settingsBtn').onclick = () => { 
-        if (pendingFlight) {
-            // ✈️ 비행 중일 때:
-            settingsModal.style.display = 'flex';
-            
-            // 맵 스타일 변경 외 다른 버튼들은 비활성화
-            editNameBtn.disabled = true;
-            document.querySelector('.settings-content button[onclick="exportData()"]').disabled = true;
-            document.querySelector('.settings-content button[onclick="importData()"]').disabled = true;
-            
-            // 하단 네비게이션 활성 표시는 변경하지 않음
-            
-        } else {
-            // 🏠 비행 중이 아닐 때 (기존 동작):
-            hideAllContainers();
-            document.getElementById('map').style.display='block';
-            settingsModal.style.display = 'flex';
-            
-            // 모든 버튼 활성화
-            editNameBtn.disabled = false;
-            document.querySelector('.settings-content button[onclick="exportData()"]').disabled = false;
-            document.querySelector('.settings-content button[onclick="importData()"]').disabled = false;
-            
-            bottomNavUpdateActive('settingsBtn');
-        }
+        if (pendingFlight) return;
+        hideAllContainers();
+        document.getElementById('map').style.display='block';
+        settingsModal.style.display = 'flex';
+        bottomNavUpdateActive('settingsBtn');
     };
     
     document.querySelectorAll('.close-container-btn').forEach(btn => {
@@ -1847,7 +1806,7 @@ document.querySelector('.timer-box-distance').style.display = 'block';
         };
     });
 
-    closeShopBtn.onclick = () => { // ⬅️ [신규] 상점 닫기 버튼 핸들러
+    closeShopBtn.onclick = () => { 
         hideAllContainers(); 
         document.getElementById('map').style.display = 'block'; 
         bottomNavUpdateActive('homeBtn');
@@ -1873,15 +1832,9 @@ document.querySelector('.timer-box-distance').style.display = 'block';
         }
     };
 
-    // 🌟 [수정] closeSettingsModalBtn.onclick 핸들러 (비행 중/아닐 때 분리)
     closeSettingsModalBtn.onclick = () => {
         settingsModal.style.display = 'none';
-        
-        if (!pendingFlight) {
-            // 비행 중이 아닐 때만 'homeBtn'을 활성화합니다.
-            bottomNavUpdateActive('homeBtn');
-        }
-        // 비행 중일 때는 모달만 닫고 아무것도 하지 않습니다.
+        bottomNavUpdateActive('homeBtn');
     };
 
     document.querySelectorAll('.map-style-button').forEach(button => {
@@ -1892,7 +1845,7 @@ document.querySelector('.timer-box-distance').style.display = 'block';
     });
     
     // ----------------------------------------------------
-    // 💾 데이터 내보내기/불러오기 기능 추가
+    // 💾 데이터 내보내기/불러오기 기능
     // ----------------------------------------------------
 
     /**
