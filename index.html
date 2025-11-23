@@ -2,12 +2,21 @@
 <html lang="ko">
 <head>
     <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>DUKKI FocusFlight</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-<link rel="stylesheet" href="style.css" />
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DUKKI FocusFlight 3D</title>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css" />
+    <style>
+        /* Mapbox 캔버스가 전체 화면을 덮도록 설정 */
+        .mapboxgl-canvas { outline: none; }
+        /* 마커가 지도 위에 잘 뜨도록 z-index 조정 */
+        .mapboxgl-marker { z-index: 10; }
+        /* Mapbox 로고/속성 표시 위치 조정 (UI와 겹치지 않게) */
+        .mapboxgl-ctrl-bottom-left, .mapboxgl-ctrl-bottom-right {
+            bottom: 80px !important; 
+            opacity: 0.7;
+        }
+    </style>
 </head>
 
 <body class="map-style-satellite"> 
@@ -38,8 +47,7 @@
     </div>
 </div>
 
-<div id="greetingContainer" style="display: none;">
-</div>
+<div id="greetingContainer" style="display: none;"></div>
 
 <div class="controls-container">
   <input type="text" id="departureSearch" placeholder="출발지 검색 (도시, 코드)">
@@ -54,13 +62,11 @@
 
 <div id="timerContainer" >  
     <div id="timerDisplayPreFlight">DUKKI Focus</div>  
-      
     <div class="timer-box timer-box-time">  
             <div class="timer-box-label">남은 시간</div>  
             <div id="timerDisplay" class="timer-box-value">00H00M00S</div>  
             <div id="focusStatus"></div>  
         </div>  
-          
         <div class="timer-box timer-box-clock">  
             <div class="clock-item">  
                 <div class="timer-box-label">현재시간</div>  
@@ -71,14 +77,11 @@
                 <div id="localTimeDisplay" class="timer-box-value">--:--</div>  
             </div>  
         </div>  
-          
         <div class="timer-box timer-box-distance">  
             <div class="timer-box-label">남은 거리</div>  
             <div id="distanceDisplay" class="timer-box-value">0 KM</div>  
         </div>  
-      
 </div>  
-  
 
 <button id="moneyButton" class="money-button">
     💰 <span id="moneyDisplay">1</span>
@@ -88,19 +91,14 @@
     <span id="followIcon">📍</span>
 </button>
 
-
-
-
 <div id="recordsContainer">
   <button class="close-container-btn">×</button> 
   <h3 style="text-align:center; margin-top:50px;">✈️ 여행 기록</h3>
-  
   <div id="recordFilterContainer">
       <button class="record-filter-btn active" data-filter="all">전체</button>
       <button class="record-filter-btn" data-filter="completed">완료함</button>
       <button class="record-filter-btn" data-filter="incomplete">미완료</button>
   </div>
-  
   <div style="text-align: center; padding: 0 20px;">
     <button id="clearRecordsBtn">기록 초기화</button>
   </div>
@@ -110,19 +108,16 @@
 <div id="trendsContainer">
   <button class="close-container-btn">×</button> 
   <h3 style="text-align:center; margin-top:50px;">📊 비행 추세 분석</h3>
-  <div class="trends-grid" id="trendsData">
-    </div>
+  <div class="trends-grid" id="trendsData"></div>
 </div>
 
 <div class="modal" id="ticketModal">
   <div class="modal-content">
     <h3>티켓팅</h3>
-    
     <div style="text-align:center; font-weight:bold; margin-bottom:10px;">
       선택: <span id="selectedSeatDisplay" style="color:var(--color-primary);">좌석 없음</span> / 
       <span id="selectedFocusModeDisplay" style="color:var(--color-primary);">모드 없음</span>
     </div>
-
     <div id="seatSelectionContainer">
         <div id="fuselageWrapper">
             <span class="fuselage-part cockpit"></span>
@@ -130,21 +125,17 @@
             <span class="fuselage-part tail"></span>
         </div>
     </div>
-    
     <div id="focusModeSelector"> 
         집중 모드 선택:
         <div id="focusModeButtons"></div> 
     </div>
-
     <button id="reselectSeatBtn" class="hidden" style="width:100%; background: var(--color-surface-lighter); color: var(--color-text-light); border: 1px solid var(--color-border-dark); margin-top: 5px;">
         좌석 다시 선택 🔄
     </button>
-    
     <div class="modal-buttons-container" id="selectionButtons">
         <button id="confirmSelectionBtn" disabled>선택 완료 (티켓 발권)</button>
         <button id="closeModalBtn">취소</button>
     </div>
-
     <div id="boardingPassContainer" style="display:none;">
         <div class="boarding-pass">
             <div class="bp-info">
@@ -163,18 +154,13 @@
         <div class="barcode-panel">
             <div class="barcode"></div>
             <div class="barcode-text" id="bpBarcodeText">FOCUSFLIGHT-A9-A-Z-STUDY-DUKKI</div>
-            
             <div id="slideTrack">
                 <div id="slideBackground"></div>
                 <div id="slideHandle">✈️</div>
                 <div id="slideText">밀어서 티켓 스캔 🎫</div> 
             </div>
-            <div style="font-size:12px; color:#fff; font-weight:bold; margin-top: 5px; display:none;">
-                게이트에 티켓을 스캔하세요
-            </div>
         </div>
     </div>
-    
   </div>
 </div>
 
@@ -191,16 +177,15 @@
     <div class="settings-content">
         <h3>설정 ⚙️</h3>
         <button id="editNameBtn">이름 수정하기</button>
-        
         <h4 style="color:var(--color-primary); margin-top: 20px; margin-bottom: 5px;">지도 스타일 설정 🗺️</h4>
         <div id="mapStyleButtons">
             <button class="map-style-button" data-style="2d">2D 일반</button>
-            <button class="map-style-button" data-style="2d-dark">2D 다크</button> <button class="map-style-button active" data-style="satellite">위성</button> </div>
-        
+            <button class="map-style-button" data-style="2d-dark">2D 다크</button> 
+            <button class="map-style-button active" data-style="satellite">3D 위성</button> 
+        </div>
         <h4 style="color:var(--color-primary); margin-top: 20px; margin-bottom: 5px;">데이터 관리 💾</h4>
         <button onclick="exportData()">데이터 내보내기</button>
         <button onclick="importData()">데이터 불러오기</button>
-        
         <div style="font-size: 12px; color: #888; text-align: center; margin-top: 10px;">By TEAMBUCK</div> 
         <button id="closeSettingsModalBtn">닫기</button>
     </div>
@@ -225,10 +210,7 @@
   <button id="settingsBtn">⚙️ 설정</button> 
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<script src="main.js">
-
-</script>
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+<script src="main.js"></script>
 </body>
 </html>
